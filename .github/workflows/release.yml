@@ -75,17 +75,20 @@ jobs:
           npm ci
           npm run tauri build
 
-      - name: Upload launcher to GitHub Release
+      - name: Upload launcher to permanent Installer Release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          tag="${{ env.RELEASE_TAG }}"
+          tag="installer"
           launcher="installer-launcher/src-tauri/target/release/HiroCrosshair-launcher.exe"
           if [[ ! -f "$launcher" ]]; then
             echo "Expected launcher at: $launcher"
-            ls -la installer-launcher/src-tauri/target/release || true
             exit 1
           fi
+          
+          # Create the 'installer' release if it doesn't exist
+          gh release create "$tag" --title "HiroCrosshair Installer" --notes "Download this file to install or update HiroCrosshair." || true
+          
           gh release upload "$tag" "$launcher" --clobber
