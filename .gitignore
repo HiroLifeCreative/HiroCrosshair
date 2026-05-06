@@ -2,3 +2,5 @@
 !release/
 !release/*.exe
 !.gitignore
+!.github/
+!.github/**/*
