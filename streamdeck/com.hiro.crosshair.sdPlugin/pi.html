@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>HiroCrosshair PI</title>
+    <link rel="stylesheet" href="https://docs.elgato.com/streamdeck/sdk/introduction/getting-started/css/sdpi.css">
+    <style>
+        body { background-color: transparent; color: white; font-family: sans-serif; padding: 10px; }
+        .sdpi-item-label { color: #ccc; font-size: 11px; margin-bottom: 4px; }
+        input { width: 100%; background: #222; border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="sdpi-wrapper">
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">ID del Juego</div>
+            <input id="gameId" type="text" placeholder="ej. battlefield_4">
+        </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">ID del Slot (Mira)</div>
+            <input id="overlayId" type="text" placeholder="ej. slot_1">
+        </div>
+        <div class="sdpi-item">
+            <p style="font-size: 10px; color: #888;">Copia estos IDs desde el administrador de juegos en HiroCrosshair.</p>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let uuid = null;
+
+        function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+            uuid = inUUID;
+            websocket = new WebSocket("ws://127.0.0.1:" + inPort);
+
+            const actionInfo = JSON.parse(inActionInfo);
+            const settings = actionInfo.payload.settings;
+            
+            if (settings.gameId) document.getElementById('gameId').value = settings.gameId;
+            if (settings.overlayId) document.getElementById('overlayId').value = settings.overlayId;
+
+            websocket.onopen = function() {
+                websocket.send(JSON.stringify({ event: inRegisterEvent, uuid: inUUID }));
+            };
+
+            const inputs = ['gameId', 'overlayId'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('change', () => {
+                    const payload = {
+                        gameId: document.getElementById('gameId').value,
+                        overlayId: document.getElementById('overlayId').value
+                    };
+                    websocket.send(JSON.stringify({
+                        event: "setSettings",
+                        context: uuid,
+                        payload: payload
+                    }));
+                });
+            });
+        }
+    </script>
+</body>
+</html>

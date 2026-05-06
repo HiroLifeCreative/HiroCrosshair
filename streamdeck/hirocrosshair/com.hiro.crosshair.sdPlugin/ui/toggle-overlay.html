@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>HiroCrosshair - Toggle & Presets</title>
+    <link rel="stylesheet" href="css/sdpi.css">
+    <script src="js/sdpi.js"></script>
+</head>
+<body>
+    <div class="sdpi-wrapper">
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Style (Preset)</div>
+            <select id="preset-selector" class="sdpi-item-value" onchange="applyPreset()">
+                <option value="">Loading Styles...</option>
+            </select>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Refresh</div>
+            <button class="sdpi-item-value" onclick="loadPresets()">Sync Styles</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSettings = {};
+
+        // Listen for connection and settings
+        $SD.onDidReceiveSettings('com.hiro.crosshair.toggle', (data) => {
+            console.log("Settings received:", data);
+            currentSettings = data.payload.settings || {};
+            
+            // If presets are already loaded, select the current one
+            const selector = document.getElementById('preset-selector');
+            if (currentSettings.presetId && selector.options.length > 1) {
+                selector.value = currentSettings.presetId;
+            }
+        });
+
+        async function loadPresets() {
+            const selector = document.getElementById('preset-selector');
+            try {
+                const response = await fetch('http://localhost:1422/presets');
+                const presets = await response.json();
+                
+                selector.innerHTML = '<option value="">-- Choose Style --</option>';
+                presets.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    selector.appendChild(opt);
+                });
+
+                // Select saved setting if it exists
+                if (currentSettings.presetId) {
+                    selector.value = currentSettings.presetId;
+                }
+            } catch (error) {
+                console.error("Error loading presets:", error);
+                selector.innerHTML = '<option value="">App disconnected</option>';
+            }
+        }
+
+        function applyPreset() {
+            const id = document.getElementById('preset-selector').value;
+            
+            // Save settings for this specific button
+            currentSettings.presetId = id;
+            $SD.setSettings(currentSettings);
+
+            if (!id) return;
+            
+            // Apply preview
+            fetch(`http://localhost:1422/?c=preset:${id}`).catch(err => console.error(err));
+        }
+
+        // Initial load
+        loadPresets();
+    </script>
+</body>
+</html>

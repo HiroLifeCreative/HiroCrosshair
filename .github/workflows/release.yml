@@ -1,0 +1,91 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Set channel variables
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == *"-beta."* ]]; then
+            echo "CHANNEL=beta" >> "$GITHUB_ENV"
+            # Keep a moving 'beta' tag/release that hosts latest beta updater JSON.
+            echo "RELEASE_TAG=beta" >> "$GITHUB_ENV"
+            echo "PRERELEASE=true" >> "$GITHUB_ENV"
+            echo "RELEASE_NAME=HiroCrosshair Beta" >> "$GITHUB_ENV"
+            echo "RELEASE_BODY=Auto-generated beta from ${TAG}" >> "$GITHUB_ENV"
+          else
+            echo "CHANNEL=stable" >> "$GITHUB_ENV"
+            echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+            echo "PRERELEASE=false" >> "$GITHUB_ENV"
+            echo "RELEASE_NAME=HiroCrosshair ${TAG}" >> "$GITHUB_ENV"
+            echo "RELEASE_BODY=Release ${TAG}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build and publish (Tauri main app + NSIS)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: ${{ env.RELEASE_NAME }}
+          releaseBody: ${{ env.RELEASE_BODY }}
+          prerelease: ${{ env.PRERELEASE }}
+          args: ${{ matrix.args }}
+
+      - name: Build Windows installer launcher (wizard)
+        working-directory: installer-launcher
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          npm ci
+          npm run tauri build
+
+      - name: Upload launcher to GitHub Release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ env.RELEASE_TAG }}"
+          launcher="installer-launcher/src-tauri/target/release/HiroCrosshair-launcher.exe"
+          if [[ ! -f "$launcher" ]]; then
+            echo "Expected launcher at: $launcher"
+            ls -la installer-launcher/src-tauri/target/release || true
+            exit 1
+          fi
+          gh release upload "$tag" "$launcher" --clobber

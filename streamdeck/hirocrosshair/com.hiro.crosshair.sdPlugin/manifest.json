@@ -1,0 +1,71 @@
+{
+	"Name": "HiroCrosshair",
+	"Version": "1.0.0.0",
+	"Author": "HiroLifeStudio",
+	"Actions": [
+		{
+			"Name": "Toggle Overlay",
+			"UUID": "com.hiro.crosshair.toggle",
+			"Icon": "imgs/actions/toggleoverlay/icon",
+			"Tooltip": "Toggles the crosshair overlay visibility.",
+			"PropertyInspectorPath": "ui/toggle-overlay.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/toggleoverlay/off",
+					"Title": "OFF",
+					"TitleAlignment": "middle"
+				},
+				{
+					"Image": "imgs/actions/toggleoverlay/on",
+					"Title": "ON",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Select Game",
+			"UUID": "com.hiro.crosshair.select",
+			"Icon": "imgs/actions/selectgame/icon",
+			"Tooltip": "Selects a specific game profile or slot.",
+			"PropertyInspectorPath": "ui/select-game.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/selectgame/off",
+					"Title": "OFF",
+					"TitleAlignment": "middle"
+				},
+				{
+					"Image": "imgs/actions/selectgame/on",
+					"Title": "ON",
+					"TitleAlignment": "middle"
+				}
+			]
+		}
+	],
+	"Category": "HiroCrosshair",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "Professional crosshair overlay control for HiroCrosshair",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 3,
+	"Software": {
+		"MinimumVersion": "7.1"
+	},
+	"OS": [
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	},
+	"UUID": "com.hiro.crosshair"
+}
