@@ -66,6 +66,20 @@ jobs:
           prerelease: ${{ env.PRERELEASE }}
           args: ${{ matrix.args }}
 
+      - name: Ensure latest.json is uploaded for updater
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # The updater JSON name can vary. We find the .json in the bundle folder and upload it as latest.json
+          json_file=$(find src-tauri/target/release/bundle/nsis -name "*.json" | head -n 1)
+          if [[ -f "$json_file" ]]; then
+            echo "Found updater JSON: $json_file"
+            gh release upload "${{ env.RELEASE_TAG }}" "$json_file#latest.json" --clobber
+          else
+            echo "No updater JSON found in bundle directory."
+          fi
+
       - name: Build Windows installer launcher (wizard)
         working-directory: installer-launcher
         env:
